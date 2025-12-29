@@ -47,6 +47,7 @@
 (keyword_then) @keyword
 (keyword_else) @keyword
 (keyword_end) @keyword
+(keyword_having) @keyword
 
 "|>" @operator
 "=" @operator

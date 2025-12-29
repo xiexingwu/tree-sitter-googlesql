@@ -43,7 +43,9 @@ module.exports = grammar({
       optional($.from_clause),
       optional($.where_clause),
       optional($.group_by_clause),
-      optional($.order_by_clause)
+      optional($.having_clause),
+      optional($.order_by_clause),
+      optional($.limit_clause)
     )),
 
     from_clause: $ => seq(
@@ -58,6 +60,8 @@ module.exports = grammar({
       $.keyword_by,
       commaSepTrail1($.expression)
     ),
+    limit_clause: $ => seq($.keyword_limit, $.number, optional(seq($.keyword_offset, $.number))),
+    having_clause: $ => seq($.keyword_having, $.expression),
     // --- Pipe Operations ---
 
     pipe_operation: $ => seq(
@@ -135,13 +139,27 @@ module.exports = grammar({
       $.in_expression,
       $.like_expression,
       $.case_expression,
-      $.parenthesized_expression, $.star
+      $.parenthesized_expression,
+      $.subquery,
+      $.star
+    ),
+
+    subquery: $ => seq(
+      '(',
+      $.query_expression,
+      ')'
     ),
 
     function_call: $ => seq(
       field('name', $.function_name),
       '(',
-      optional(choice($.star, commaSep1($.expression))),
+      optional(choice(
+        $.star, // COUNT(*)
+        seq(
+          optional($.keyword_distinct),
+          commaSep1($.expression)
+        )
+      )),
       ')',
       optional($.over_clause)
     ),
@@ -220,7 +238,13 @@ module.exports = grammar({
       /`([^`]|``)*`/             // Quoted
     ))),
 
-    number: $ => /\d+/,
+    number: $ => token(seq(
+      choice(
+        seq(/\d+/, optional(seq('.', optional(/\d+/)))), // Matches: 123, 123., 123.45
+        seq('.', /\d+/)                                  // Matches: .45
+      ),
+      optional(seq(/[eE]/, optional(/[+-]/), /\d+/))     // Matches: e6, E-5, e+10
+    )),
     string: $ => /'[^']*'|"[^"]*"/,
     star: $ => '*',
     boolean: $ => choice($.keyword_true, $.keyword_false),
@@ -281,6 +305,7 @@ module.exports = grammar({
     keyword_then: $ => token(caseInsensitive('THEN')),
     keyword_else: $ => token(caseInsensitive('ELSE')),
     keyword_end: $ => token(caseInsensitive('END')),
+    keyword_having: $ => token(caseInsensitive('HAVING')),
   }
 });
 
