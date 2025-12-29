@@ -82,7 +82,7 @@ FROM orders
                   (star))))
             (keyword_as)
             (identifier))
-          (group_by_clause
+          (pipe_group_by_clause
             (keyword_group)
             (keyword_by)
             (expression
@@ -160,35 +160,44 @@ FROM t
     (query_expression
       (from_clause
         (keyword_from)
-        (table_expression (identifier)))
+        (table_expression
+          (identifier)))
       (pipe_operation
         (pipe_where
           (keyword_where)
           (expression
             (between_expression
-              (expression (identifier))
+              (expression
+                (identifier))
               (keyword_between)
-              (expression (number))
+              (expression
+                (number))
               (keyword_and)
-              (expression (number))))))
+              (expression
+                (number))))))
       (pipe_operation
         (pipe_where
           (keyword_where)
           (expression
             (in_expression
-              (expression (identifier))
+              (expression
+                (identifier))
               (keyword_not)
               (keyword_in)
-              (expression (string))
-              (expression (string))))))
+              (expression
+                (string))
+              (expression
+                (string))))))
       (pipe_operation
         (pipe_where
           (keyword_where)
           (expression
             (like_expression
-              (expression (identifier))
+              (expression
+                (identifier))
               (keyword_like)
-              (expression (string))))))
+              (expression
+                (string))))))
       (pipe_operation
         (pipe_extend
           (keyword_extend)
@@ -198,12 +207,19 @@ FROM t
                 (keyword_case)
                 (when_clause
                   (keyword_when)
-                  (expression (binary_expression (expression (identifier)) (expression (number))))
+                  (expression
+                    (binary_expression
+                      (expression
+                        (identifier))
+                      (expression
+                        (number))))
                   (keyword_then)
-                  (expression (string)))
+                  (expression
+                    (string)))
                 (else_clause
                   (keyword_else)
-                  (expression (string)))
+                  (expression
+                    (string)))
                 (keyword_end)))
             (keyword_as)
             (identifier)))))))

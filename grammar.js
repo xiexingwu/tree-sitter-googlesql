@@ -39,18 +39,25 @@ module.exports = grammar({
     select_statement: $ => prec.right(seq(
       $.keyword_select,
       optional($.keyword_distinct),
-      commaSep1($.alias_expression),
+      commaSepTrail1($.alias_expression),
       optional($.from_clause),
       optional($.where_clause),
       optional($.group_by_clause),
       optional($.order_by_clause)
     )),
 
-    from_clause: $ => seq($.keyword_from, $.table_expression),
+    from_clause: $ => seq(
+      $.keyword_from,
+      commaSep1($.table_expression)
+    ),
     where_clause: $ => seq($.keyword_where, $.expression),
     group_by_clause: $ => seq($.keyword_group, $.keyword_by, commaSep1($.expression)),
     order_by_clause: $ => seq($.keyword_order, $.keyword_by, commaSep1($.order_expression)),
-
+    pipe_group_by_clause: $ => seq(
+      $.keyword_group,
+      $.keyword_by,
+      commaSepTrail1($.expression)
+    ),
     // --- Pipe Operations ---
 
     pipe_operation: $ => seq(
@@ -62,13 +69,17 @@ module.exports = grammar({
       )
     ),
 
-    pipe_select: $ => seq($.keyword_select, optional($.keyword_distinct), commaSep1($.alias_expression)),
-    pipe_extend: $ => seq($.keyword_extend, commaSep1($.alias_expression)),
-    pipe_set: $ => seq($.keyword_set, commaSep1($.alias_expression)),
-    pipe_drop: $ => seq($.keyword_drop, commaSep1($.identifier)),
-    pipe_rename: $ => seq($.keyword_rename, commaSep1(seq($.identifier, $.keyword_as, $.identifier))),
+    pipe_select: $ => seq($.keyword_select, optional($.keyword_distinct), commaSepTrail1($.alias_expression)),
+    pipe_extend: $ => seq($.keyword_extend, commaSepTrail1($.alias_expression)),
+    pipe_set: $ => seq($.keyword_set, commaSepTrail1($.alias_expression)),
+    pipe_drop: $ => seq($.keyword_drop, commaSepTrail1($.identifier)),
+    pipe_rename: $ => seq($.keyword_rename, commaSepTrail1(seq($.identifier, $.keyword_as, $.identifier))),
+    pipe_aggregate: $ => seq(
+      $.keyword_aggregate,
+      commaSepTrail1($.alias_expression),
+      optional($.pipe_group_by_clause) // <--- Use the named rule
+    ),
     pipe_where: $ => seq($.keyword_where, $.expression),
-    pipe_aggregate: $ => seq($.keyword_aggregate, commaSep1($.alias_expression), optional($.group_by_clause)),
 
     pipe_join: $ => seq(
       choice(
@@ -84,7 +95,7 @@ module.exports = grammar({
     ),
 
     pipe_limit: $ => seq($.keyword_limit, $.number, optional(seq($.keyword_offset, $.number))),
-    pipe_order_by: $ => seq($.keyword_order, $.keyword_by, commaSep1($.order_expression)),
+    pipe_order_by: $ => seq($.keyword_order, $.keyword_by, commaSepTrail1($.order_expression)),
     pipe_window: $ => seq($.keyword_window, $.expression),
     pipe_call: $ => seq($.keyword_call, $.function_call),
 
@@ -263,17 +274,29 @@ module.exports = grammar({
     keyword_true: $ => token(caseInsensitive('TRUE')),
     keyword_false: $ => token(caseInsensitive('FALSE')),
     keyword_between: $ => token(caseInsensitive('BETWEEN')),
-    keyword_in:      $ => token(caseInsensitive('IN')),
-    keyword_like:    $ => token(caseInsensitive('LIKE')),
-    keyword_case:    $ => token(caseInsensitive('CASE')),
-    keyword_when:    $ => token(caseInsensitive('WHEN')),
-    keyword_then:    $ => token(caseInsensitive('THEN')),
-    keyword_else:    $ => token(caseInsensitive('ELSE')),
-    keyword_end:     $ => token(caseInsensitive('END')),
+    keyword_in: $ => token(caseInsensitive('IN')),
+    keyword_like: $ => token(caseInsensitive('LIKE')),
+    keyword_case: $ => token(caseInsensitive('CASE')),
+    keyword_when: $ => token(caseInsensitive('WHEN')),
+    keyword_then: $ => token(caseInsensitive('THEN')),
+    keyword_else: $ => token(caseInsensitive('ELSE')),
+    keyword_end: $ => token(caseInsensitive('END')),
   }
 });
 
-function commaSep1(rule) { return seq(rule, repeat(seq(',', rule))); }
+// Strict: No trailing comma allowed (e.g., Standard SQL GROUP BY)
+function commaSep1(rule) {
+  return seq(rule, repeat(seq(',', rule)));
+}
+
+// Trailing: Optional trailing comma allowed (e.g., Pipe syntax SELECT, EXTEND)
+function commaSepTrail1(rule) {
+  return seq(
+    rule,
+    repeat(seq(',', rule)),
+    optional(',')
+  );
+}
 
 function caseInsensitive(keyword) {
   return new RegExp(keyword.split('').map(l => `[${l.toLowerCase()}${l.toUpperCase()}]`).join(''));
