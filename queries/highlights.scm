@@ -32,6 +32,13 @@
 (keyword_or) @keyword
 (keyword_asc) @keyword
 (keyword_desc) @keyword
+(keyword_with) @keyword
+(keyword_recursive) @keyword
+(keyword_is) @keyword
+(keyword_not) @keyword
+(keyword_null) @constant.builtin  ; NULL is often highlighted as a constant
+(keyword_true) @boolean
+(keyword_false) @boolean
 
 "|>" @operator
 "=" @operator
