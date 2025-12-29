@@ -147,7 +147,14 @@ module.exports = grammar({
 
     parenthesized_expression: $ => seq('(', $.expression, ')'),
     function_name: $ => $.identifier,
-    identifier: $ => /[a-zA-Z_][a-zA-Z0-9_.]*/,
+    identifier: $ => choice(
+      // Standard unquoted: letters, numbers, underscores, and dots (for simple paths)
+      /[a-zA-Z_][a-zA-Z0-9_.]*/,
+
+      // Quoted with backticks: allows any character except backtick, 
+      // or a double backtick "``" to escape.
+      /`([^`]|``)*`/
+    ),
     number: $ => /\d+/,
     string: $ => /'[^']*'|"[^"]*"/,
     star: $ => '*',
