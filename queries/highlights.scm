@@ -1,0 +1,23 @@
+"|>" @operator
+"SELECT" @keyword
+"FROM" @keyword
+"WHERE" @keyword
+"GROUP" @keyword
+"BY" @keyword
+"ORDER" @keyword
+"EXTEND" @keyword
+"SET" @keyword
+"DROP" @keyword
+"RENAME" @keyword
+"AGGREGATE" @keyword
+"JOIN" @keyword
+"LIMIT" @keyword
+"CALL" @keyword
+"WINDOW" @keyword
+"AS" @keyword
+
+(string) @string
+(number) @number
+(comment) @comment
+(function_name) @function
+(identifier) @variable
