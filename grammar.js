@@ -1,197 +1,100 @@
-const CASE_INSENSITIVE = (keyword) => {
-  return new RegExp(keyword.split('').map(l => `[${l.toLowerCase()}${l.toUpperCase()}]`).join(''));
-}
-
 module.exports = grammar({
   name: 'googlesql_pipe',
 
-  extras: $ => [
-    /\s/,
-    $.comment,
-  ],
+  extras: $ => [ /\s/, $.comment ],
 
   conflicts: $ => [
-    [$.expression, $.function_call],
+    [$.expression, $.function_call]
   ],
 
   rules: {
     source_file: $ => repeat($.statement),
+    statement: $ => seq($.query_expression, optional(';')),
 
-    statement: $ => seq(
-      $.query_expression,
-      optional(';')
-    ),
-
-    // A query can be a standard SELECT or a standalone FROM clause, 
-    // optionally followed by a chain of pipe operators.
     query_expression: $ => seq(
-      choice(
-        $.select_statement,
-        $.from_clause
-      ),
+      choice($.select_statement, $.from_clause),
       repeat($.pipe_operation)
     ),
 
-    // --- Standard SQL Starters ---
-
-// Use prec.right to force the parser to consume optional clauses (FROM, WHERE)
-    // rather than ending the statement prematurely to start a new FROM-pipe statement.
+    // --- High-Level Statements ---
+    
     select_statement: $ => prec.right(seq(
-      CASE_INSENSITIVE('SELECT'),
-      optional(CASE_INSENSITIVE('DISTINCT')),
-      commaSep1($.alias_expression), // Updated to allow "SELECT x AS y"
+      $.keyword_select,
+      optional($.keyword_distinct),
+      commaSep1($.alias_expression),
       optional($.from_clause),
       optional($.where_clause),
       optional($.group_by_clause),
       optional($.order_by_clause)
     )),
 
-    from_clause: $ => seq(
-      CASE_INSENSITIVE('FROM'),
-      $.table_expression
-    ),
+    from_clause: $ => seq($.keyword_from, $.table_expression),
+    where_clause: $ => seq($.keyword_where, $.expression),
+    group_by_clause: $ => seq($.keyword_group, $.keyword_by, commaSep1($.expression)),
+    order_by_clause: $ => seq($.keyword_order, $.keyword_by, commaSep1($.order_expression)),
 
-    where_clause: $ => seq(
-      CASE_INSENSITIVE('WHERE'),
-      $.expression
-    ),
-
-    group_by_clause: $ => seq(
-      CASE_INSENSITIVE('GROUP'),
-      CASE_INSENSITIVE('BY'),
-      commaSep1($.expression)
-    ),
-
-    order_by_clause: $ => seq(
-      CASE_INSENSITIVE('ORDER'),
-      CASE_INSENSITIVE('BY'),
-      commaSep1($.order_expression)
-    ),
-
-    // --- Pipe Syntax ---
+    // --- Pipe Operations ---
 
     pipe_operation: $ => seq(
       '|>',
       choice(
-        $.pipe_select,
-        $.pipe_extend,
-        $.pipe_set,
-        $.pipe_drop,
-        $.pipe_rename,
-        $.pipe_where,
-        $.pipe_aggregate,
-        $.pipe_join,
-        $.pipe_limit,
-        $.pipe_order_by,
-        $.pipe_window,
-        $.pipe_call
+        $.pipe_select, $.pipe_extend, $.pipe_set, $.pipe_drop, 
+        $.pipe_rename, $.pipe_where, $.pipe_aggregate, $.pipe_join, 
+        $.pipe_limit, $.pipe_order_by, $.pipe_window, $.pipe_call
       )
     ),
 
-    pipe_select: $ => seq(
-      CASE_INSENSITIVE('SELECT'),
-      optional(CASE_INSENSITIVE('DISTINCT')),
-      commaSep1($.alias_expression)
-    ),
-
-    pipe_extend: $ => seq(
-      CASE_INSENSITIVE('EXTEND'),
-      commaSep1($.alias_expression)
-    ),
-
-    pipe_set: $ => seq(
-      CASE_INSENSITIVE('SET'),
-      commaSep1($.alias_expression)
-    ),
-
-    pipe_drop: $ => seq(
-      CASE_INSENSITIVE('DROP'),
-      commaSep1($.identifier)
-    ),
-
-    pipe_rename: $ => seq(
-      CASE_INSENSITIVE('RENAME'),
-      commaSep1(seq($.identifier, CASE_INSENSITIVE('AS'), $.identifier))
-    ),
-
-    pipe_where: $ => seq(
-      CASE_INSENSITIVE('WHERE'),
-      $.expression
-    ),
-
-    pipe_aggregate: $ => seq(
-      CASE_INSENSITIVE('AGGREGATE'),
-      commaSep1($.alias_expression),
-      optional($.group_by_clause)
-    ),
-
+    pipe_select: $ => seq($.keyword_select, optional($.keyword_distinct), commaSep1($.alias_expression)),
+    pipe_extend: $ => seq($.keyword_extend, commaSep1($.alias_expression)),
+    pipe_set: $ => seq($.keyword_set, commaSep1($.alias_expression)),
+    pipe_drop: $ => seq($.keyword_drop, commaSep1($.identifier)),
+    pipe_rename: $ => seq($.keyword_rename, commaSep1(seq($.identifier, $.keyword_as, $.identifier))),
+    pipe_where: $ => seq($.keyword_where, $.expression),
+    pipe_aggregate: $ => seq($.keyword_aggregate, commaSep1($.alias_expression), optional($.group_by_clause)),
+    
     pipe_join: $ => seq(
       choice(
-        CASE_INSENSITIVE('JOIN'),
-        seq(CASE_INSENSITIVE('INNER'), CASE_INSENSITIVE('JOIN')),
-        seq(CASE_INSENSITIVE('LEFT'), optional(CASE_INSENSITIVE('OUTER')), CASE_INSENSITIVE('JOIN')),
-        seq(CASE_INSENSITIVE('RIGHT'), optional(CASE_INSENSITIVE('OUTER')), CASE_INSENSITIVE('JOIN')),
-        seq(CASE_INSENSITIVE('FULL'), optional(CASE_INSENSITIVE('OUTER')), CASE_INSENSITIVE('JOIN')),
-        seq(CASE_INSENSITIVE('CROSS'), CASE_INSENSITIVE('JOIN'))
+        $.keyword_join,
+        seq($.keyword_inner, $.keyword_join),
+        seq($.keyword_left, optional($.keyword_outer), $.keyword_join),
+        seq($.keyword_right, optional($.keyword_outer), $.keyword_join),
+        seq($.keyword_full, optional($.keyword_outer), $.keyword_join),
+        seq($.keyword_cross, $.keyword_join)
       ),
       $.table_expression,
       optional($.join_condition)
     ),
 
-    pipe_limit: $ => seq(
-      CASE_INSENSITIVE('LIMIT'),
-      $.number,
-      optional(seq(CASE_INSENSITIVE('OFFSET'), $.number))
-    ),
+    pipe_limit: $ => seq($.keyword_limit, $.number, optional(seq($.keyword_offset, $.number))),
+    pipe_order_by: $ => seq($.keyword_order, $.keyword_by, commaSep1($.order_expression)),
+    pipe_window: $ => seq($.keyword_window, $.expression),
+    pipe_call: $ => seq($.keyword_call, $.function_call),
 
-    pipe_order_by: $ => seq(
-      CASE_INSENSITIVE('ORDER'),
-      CASE_INSENSITIVE('BY'),
-      commaSep1($.order_expression)
-    ),
-
-    pipe_window: $ => seq(
-      CASE_INSENSITIVE('WINDOW'),
-      $.expression // Simplified for brevity
-    ),
-
-    pipe_call: $ => seq(
-      CASE_INSENSITIVE('CALL'),
-      $.function_call
-    ),
-
-    // --- Basic Expressions & Primitives ---
+    // --- Expressions ---
 
     table_expression: $ => seq(
-      choice($.identifier, $.function_call), // e.g., tableName or UNNEST(...)
-      optional(seq(CASE_INSENSITIVE('AS'), $.identifier))
+      choice($.identifier, $.function_call),
+      optional(seq($.keyword_as, $.identifier))
     ),
 
     join_condition: $ => choice(
-      seq(CASE_INSENSITIVE('ON'), $.expression),
-      seq(CASE_INSENSITIVE('USING'), '(', commaSep1($.identifier), ')')
+      seq($.keyword_on, $.expression),
+      seq($.keyword_using, '(', commaSep1($.identifier), ')')
     ),
 
-    // Alias expression: "expr [AS alias]" or "alias = expr" (standard SQL vs some pipe contexts)
-    // ZetaSQL pipe EXTEND/SET usually uses "expr AS alias"
     alias_expression: $ => seq(
       $.expression,
-      optional(seq(CASE_INSENSITIVE('AS'), $.identifier))
+      optional(seq($.keyword_as, $.identifier))
     ),
 
     order_expression: $ => seq(
       $.expression,
-      optional(choice(CASE_INSENSITIVE('ASC'), CASE_INSENSITIVE('DESC')))
+      optional(choice($.keyword_asc, $.keyword_desc))
     ),
 
     expression: $ => choice(
-      $.identifier,
-      $.number,
-      $.string,
-      $.function_call,
-      $.binary_expression,
-      $.parenthesized_expression,
-      $.star
+      $.identifier, $.number, $.string, $.function_call,
+      $.binary_expression, $.parenthesized_expression, $.star
     ),
 
     function_call: $ => seq(
@@ -203,21 +106,20 @@ module.exports = grammar({
     ),
 
     over_clause: $ => seq(
-      CASE_INSENSITIVE('OVER'),
+      $.keyword_over,
       '(',
-      optional(seq(CASE_INSENSITIVE('PARTITION'), CASE_INSENSITIVE('BY'), commaSep1($.expression))),
+      optional(seq($.keyword_partition, $.keyword_by, commaSep1($.expression))),
       optional($.order_by_clause),
       ')'
     ),
 
     binary_expression: $ => prec.left(1, seq(
       $.expression,
-      choice('=', '<', '>', '<=', '>=', '<>', '+', '-', '*', '/', CASE_INSENSITIVE('AND'), CASE_INSENSITIVE('OR')),
+      choice('=', '<', '>', '<=', '>=', '<>', '+', '-', '*', '/', $.keyword_and, $.keyword_or),
       $.expression
     )),
 
     parenthesized_expression: $ => seq('(', $.expression, ')'),
-
     function_name: $ => $.identifier,
     identifier: $ => /[a-zA-Z_][a-zA-Z0-9_.]*/,
     number: $ => /\d+/,
@@ -229,9 +131,47 @@ module.exports = grammar({
       seq('#', /.*/),
       seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/')
     )),
+
+    // --- Keywords Definitions ---
+    // We strictly name the rules "keyword_X". This guarantees the node name is "keyword_X".
+
+    keyword_select:    $ => token(caseInsensitive('SELECT')),
+    keyword_from:      $ => token(caseInsensitive('FROM')),
+    keyword_where:     $ => token(caseInsensitive('WHERE')),
+    keyword_group:     $ => token(caseInsensitive('GROUP')),
+    keyword_by:        $ => token(caseInsensitive('BY')),
+    keyword_order:     $ => token(caseInsensitive('ORDER')),
+    keyword_extend:    $ => token(caseInsensitive('EXTEND')),
+    keyword_set:       $ => token(caseInsensitive('SET')),
+    keyword_drop:      $ => token(caseInsensitive('DROP')),
+    keyword_rename:    $ => token(caseInsensitive('RENAME')),
+    keyword_aggregate: $ => token(caseInsensitive('AGGREGATE')),
+    keyword_join:      $ => token(caseInsensitive('JOIN')),
+    keyword_inner:     $ => token(caseInsensitive('INNER')),
+    keyword_outer:     $ => token(caseInsensitive('OUTER')),
+    keyword_left:      $ => token(caseInsensitive('LEFT')),
+    keyword_right:     $ => token(caseInsensitive('RIGHT')),
+    keyword_full:      $ => token(caseInsensitive('FULL')),
+    keyword_cross:     $ => token(caseInsensitive('CROSS')),
+    keyword_on:        $ => token(caseInsensitive('ON')),
+    keyword_using:     $ => token(caseInsensitive('USING')),
+    keyword_limit:     $ => token(caseInsensitive('LIMIT')),
+    keyword_offset:    $ => token(caseInsensitive('OFFSET')),
+    keyword_call:      $ => token(caseInsensitive('CALL')),
+    keyword_window:    $ => token(caseInsensitive('WINDOW')),
+    keyword_as:        $ => token(caseInsensitive('AS')),
+    keyword_distinct:  $ => token(caseInsensitive('DISTINCT')),
+    keyword_over:      $ => token(caseInsensitive('OVER')),
+    keyword_partition: $ => token(caseInsensitive('PARTITION')),
+    keyword_and:       $ => token(caseInsensitive('AND')),
+    keyword_or:        $ => token(caseInsensitive('OR')),
+    keyword_asc:       $ => token(caseInsensitive('ASC')),
+    keyword_desc:      $ => token(caseInsensitive('DESC')),
   }
 });
 
-function commaSep1(rule) {
-  return seq(rule, repeat(seq(',', rule)));
+function commaSep1(rule) { return seq(rule, repeat(seq(',', rule))); }
+
+function caseInsensitive(keyword) {
+  return new RegExp(keyword.split('').map(l => `[${l.toLowerCase()}${l.toUpperCase()}]`).join(''));
 }

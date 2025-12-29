@@ -1,0 +1,44 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "google_sql",
+      "camelcase": "GoogleSQL",
+      "title": "GoogleSQL",
+      "scope": "source.google_sql",
+      "file-types": [
+        "sql"
+      ],
+      "path": ".",
+      "injection-regex": "^google_sql$",
+      "class-name": "TreeSitterGoogleSql",
+      "highlights": "queries/highlights.scm"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "GoogleSQL and Pipe syntax",
+    "authors": [
+      {
+        "name": "Michael Xie",
+        "email": "michael@fullstackdata.dev",
+        "url": "https://www.fullstackdata.dev"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/tree-sitter/tree-sitter-google_sql",
+      "funding": ""
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "java": false,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true,
+    "zig": true
+  }
+}
