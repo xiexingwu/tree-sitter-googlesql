@@ -1,5 +1,5 @@
 module.exports = grammar({
-  name: 'googlesql_pipe',
+  name: 'googlesql',
 
   extras: $ => [/\s/, $.comment],
 
