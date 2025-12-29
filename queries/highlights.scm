@@ -48,6 +48,8 @@
 (keyword_else) @keyword
 (keyword_end) @keyword
 (keyword_having) @keyword
+(keyword_pivot) @keyword
+(keyword_for) @keyword
 
 "|>" @operator
 "=" @operator

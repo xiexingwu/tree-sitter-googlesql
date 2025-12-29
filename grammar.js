@@ -62,6 +62,25 @@ module.exports = grammar({
     ),
     limit_clause: $ => seq($.keyword_limit, $.number, optional(seq($.keyword_offset, $.number))),
     having_clause: $ => seq($.keyword_having, $.expression),
+
+    pivot_clause: $ => seq(
+      $.keyword_pivot,
+      '(',
+      commaSepTrail1($.alias_expression), // Aggregations: SUM(x) AS alias
+      $.keyword_for,
+      $.identifier,                       // The pivot column
+      $.keyword_in,
+      '(',
+      commaSepTrail1($.pivot_value),      // Values: 'a', 'b' AS alias
+      ')',
+      ')'
+    ),
+
+    // Values inside IN (...) can be expressions with optional aliases
+    pivot_value: $ => seq(
+      $.expression,
+      optional(seq($.keyword_as, $.identifier))
+    ),
     // --- Pipe Operations ---
 
     pipe_operation: $ => seq(
@@ -69,7 +88,8 @@ module.exports = grammar({
       choice(
         $.pipe_select, $.pipe_extend, $.pipe_set, $.pipe_drop,
         $.pipe_rename, $.pipe_where, $.pipe_aggregate, $.pipe_join,
-        $.pipe_limit, $.pipe_order_by, $.pipe_window, $.pipe_call
+        $.pipe_limit, $.pipe_order_by, $.pipe_window, $.pipe_call,
+        $.pipe_pivot
       )
     ),
 
@@ -84,6 +104,7 @@ module.exports = grammar({
       optional($.pipe_group_by_clause) // <--- Use the named rule
     ),
     pipe_where: $ => seq($.keyword_where, $.expression),
+    pipe_pivot: $ => $.pivot_clause,
 
     pipe_join: $ => seq(
       choice(
@@ -114,6 +135,7 @@ module.exports = grammar({
 
     table_expression: $ => seq(
       choice($.identifier, $.function_call),
+      optional($.pivot_clause),
       optional(seq($.keyword_as, $.identifier))
     ),
 
@@ -306,6 +328,8 @@ module.exports = grammar({
     keyword_else: $ => token(caseInsensitive('ELSE')),
     keyword_end: $ => token(caseInsensitive('END')),
     keyword_having: $ => token(caseInsensitive('HAVING')),
+    keyword_pivot: $ => token(caseInsensitive('PIVOT')),
+    keyword_for:   $ => token(caseInsensitive('FOR')),
   }
 });
 
