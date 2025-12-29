@@ -27,7 +27,7 @@
       }
     ],
     "links": {
-      "repository": "https://github.com/tree-sitter/tree-sitter-google_sql",
+      "repository": "https://github.com/xiexingwu/tree-sitter-googlesql",
       "funding": ""
     }
   },
