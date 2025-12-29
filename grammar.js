@@ -12,7 +12,6 @@ module.exports = grammar({
 
   conflicts: $ => [
     [$.expression, $.function_call],
-    [$.identifier, $.function_name]
   ],
 
   rules: {
@@ -35,15 +34,17 @@ module.exports = grammar({
 
     // --- Standard SQL Starters ---
 
-    select_statement: $ => seq(
+// Use prec.right to force the parser to consume optional clauses (FROM, WHERE)
+    // rather than ending the statement prematurely to start a new FROM-pipe statement.
+    select_statement: $ => prec.right(seq(
       CASE_INSENSITIVE('SELECT'),
       optional(CASE_INSENSITIVE('DISTINCT')),
-      commaSep1($.expression),
+      commaSep1($.alias_expression), // Updated to allow "SELECT x AS y"
       optional($.from_clause),
       optional($.where_clause),
       optional($.group_by_clause),
       optional($.order_by_clause)
-    ),
+    )),
 
     from_clause: $ => seq(
       CASE_INSENSITIVE('FROM'),
