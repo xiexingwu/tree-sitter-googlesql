@@ -120,6 +120,10 @@ module.exports = grammar({
     expression: $ => choice(
       $.identifier, $.number, $.string, $.boolean, $.function_call,
       $.binary_expression, $.is_expression,
+      $.between_expression,
+      $.in_expression,
+      $.like_expression,
+      $.case_expression,
       $.parenthesized_expression, $.star
     ),
 
@@ -144,17 +148,67 @@ module.exports = grammar({
       choice('=', '<', '>', '<=', '>=', '<>', '+', '-', '*', '/', $.keyword_and, $.keyword_or),
       $.expression
     )),
+    // x [NOT] BETWEEN y AND z
+    between_expression: $ => prec.left(seq(
+      $.expression,
+      optional($.keyword_not),
+      $.keyword_between,
+      $.expression, // Lower bound
+      $.keyword_and,
+      $.expression  // Upper bound
+    )),
+
+    // x [NOT] IN (a, b, c)  OR  x [NOT] IN (SELECT ...)
+    in_expression: $ => prec.left(seq(
+      $.expression,
+      optional($.keyword_not),
+      $.keyword_in,
+      '(',
+      choice(
+        commaSep1($.expression),
+        $.query_expression // Logic for subqueries
+      ),
+      ')'
+    )),
+
+    // x [NOT] LIKE y
+    like_expression: $ => prec.left(seq(
+      $.expression,
+      optional($.keyword_not),
+      $.keyword_like,
+      $.expression
+    )),
+
+    // CASE WHEN x THEN y ELSE z END
+    case_expression: $ => seq(
+      $.keyword_case,
+      // "Simple" case (CASE x ...) or "Searched" case (CASE WHEN ...)
+      optional($.expression),
+      repeat1($.when_clause),
+      optional($.else_clause),
+      $.keyword_end
+    ),
+
+    when_clause: $ => seq(
+      $.keyword_when,
+      $.expression,
+      $.keyword_then,
+      $.expression
+    ),
+
+    else_clause: $ => seq(
+      $.keyword_else,
+      $.expression
+    ),
 
     parenthesized_expression: $ => seq('(', $.expression, ')'),
     function_name: $ => $.identifier,
-    identifier: $ => choice(
-      // Standard unquoted: letters, numbers, underscores, and dots (for simple paths)
-      /[a-zA-Z_][a-zA-Z0-9_.]*/,
 
-      // Quoted with backticks: allows any character except backtick, 
-      // or a double backtick "``" to escape.
-      /`([^`]|``)*`/
-    ),
+    identifier: $ => token(prec(-1, choice(
+      /[a-zA-Z_][a-zA-Z0-9_.]*/, // Standard unquoted
+      /`([^`]|``)*`/             // Quoted
+    ))),
+
     number: $ => /\d+/,
     string: $ => /'[^']*'|"[^"]*"/,
     star: $ => '*',
@@ -208,7 +262,14 @@ module.exports = grammar({
     keyword_null: $ => token(caseInsensitive('NULL')),
     keyword_true: $ => token(caseInsensitive('TRUE')),
     keyword_false: $ => token(caseInsensitive('FALSE')),
-
+    keyword_between: $ => token(caseInsensitive('BETWEEN')),
+    keyword_in:      $ => token(caseInsensitive('IN')),
+    keyword_like:    $ => token(caseInsensitive('LIKE')),
+    keyword_case:    $ => token(caseInsensitive('CASE')),
+    keyword_when:    $ => token(caseInsensitive('WHEN')),
+    keyword_then:    $ => token(caseInsensitive('THEN')),
+    keyword_else:    $ => token(caseInsensitive('ELSE')),
+    keyword_end:     $ => token(caseInsensitive('END')),
   }
 });
 

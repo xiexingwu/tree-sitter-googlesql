@@ -39,6 +39,14 @@
 (keyword_null) @constant.builtin  ; NULL is often highlighted as a constant
 (keyword_true) @boolean
 (keyword_false) @boolean
+(keyword_between) @keyword
+(keyword_in) @keyword
+(keyword_like) @keyword
+(keyword_case) @keyword
+(keyword_when) @keyword
+(keyword_then) @keyword
+(keyword_else) @keyword
+(keyword_end) @keyword
 
 "|>" @operator
 "=" @operator

@@ -140,3 +140,70 @@ FROM t1 AS a
                       (keyword_desc))))))
             (keyword_as)
             (identifier)))))))
+
+==================
+Logic Operators (BETWEEN, IN, LIKE, CASE)
+==================
+FROM t
+|> WHERE score BETWEEN 10 AND 20
+|> WHERE category NOT IN ('A', 'B')
+|> WHERE name LIKE 'Google%'
+|> EXTEND CASE
+     WHEN score > 50 THEN 'Pass'
+     ELSE 'Fail'
+   END AS status
+
+---
+
+(source_file
+  (statement
+    (query_expression
+      (from_clause
+        (keyword_from)
+        (table_expression (identifier)))
+      (pipe_operation
+        (pipe_where
+          (keyword_where)
+          (expression
+            (between_expression
+              (expression (identifier))
+              (keyword_between)
+              (expression (number))
+              (keyword_and)
+              (expression (number))))))
+      (pipe_operation
+        (pipe_where
+          (keyword_where)
+          (expression
+            (in_expression
+              (expression (identifier))
+              (keyword_not)
+              (keyword_in)
+              (expression (string))
+              (expression (string))))))
+      (pipe_operation
+        (pipe_where
+          (keyword_where)
+          (expression
+            (like_expression
+              (expression (identifier))
+              (keyword_like)
+              (expression (string))))))
+      (pipe_operation
+        (pipe_extend
+          (keyword_extend)
+          (alias_expression
+            (expression
+              (case_expression
+                (keyword_case)
+                (when_clause
+                  (keyword_when)
+                  (expression (binary_expression (expression (identifier)) (expression (number))))
+                  (keyword_then)
+                  (expression (string)))
+                (else_clause
+                  (keyword_else)
+                  (expression (string)))
+                (keyword_end)))
+            (keyword_as)
+            (identifier)))))))
