@@ -78,8 +78,7 @@ FROM orders
               (function_call
                 (function_name
                   (identifier))
-                (expression
-                  (star))))
+                (star)))
             (keyword_as)
             (identifier))
           (pipe_group_by_clause

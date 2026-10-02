@@ -14,9 +14,8 @@ FROM my_table, UNNEST(tags) AS t
         (table_expression
           (identifier))
         (table_expression
-          (function_call
-            (function_name
-              (identifier))
+          (unnest_expression
+            (keyword_unnest)
             (expression
               (identifier)))
           (keyword_as)
