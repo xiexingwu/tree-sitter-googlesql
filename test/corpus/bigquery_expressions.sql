@@ -1,0 +1,479 @@
+==================
+Array subscripts and field access
+==================
+SELECT
+  arr[SAFE_OFFSET(0)],
+  arr[OFFSET(n)],
+  arr[ORDINAL(1)].field,
+  ARRAY_AGG(x ORDER BY ts ASC LIMIT 1)[SAFE_OFFSET(0)] AS first_x,
+  json_col['key']
+
+---
+
+(source_file
+  (statement
+    (query_expression
+      (select_statement
+        (keyword_select)
+        (alias_expression
+          (expression
+            (subscript_expression
+              (expression
+                (identifier))
+              (expression
+                (function_call
+                  (function_name
+                    (identifier))
+                  (expression
+                    (number)))))))
+        (alias_expression
+          (expression
+            (subscript_expression
+              (expression
+                (identifier))
+              (expression
+                (function_call
+                  (function_name
+                    (identifier))
+                  (expression
+                    (identifier)))))))
+        (alias_expression
+          (expression
+            (field_access
+              (expression
+                (subscript_expression
+                  (expression
+                    (identifier))
+                  (expression
+                    (function_call
+                      (function_name
+                        (identifier))
+                      (expression
+                        (number))))))
+              (identifier))))
+        (alias_expression
+          (expression
+            (subscript_expression
+              (expression
+                (function_call
+                  (function_name
+                    (identifier))
+                  (expression
+                    (identifier))
+                  (order_by_clause
+                    (keyword_order)
+                    (keyword_by)
+                    (order_expression
+                      (expression
+                        (identifier))
+                      (keyword_asc)))
+                  (limit_clause
+                    (keyword_limit)
+                    (number))))
+              (expression
+                (function_call
+                  (function_name
+                    (identifier))
+                  (expression
+                    (number))))))
+          (keyword_as)
+          (identifier))
+        (alias_expression
+          (expression
+            (subscript_expression
+              (expression
+                (identifier))
+              (expression
+                (string)))))))))
+
+==================
+CAST and SAFE_CAST with types
+==================
+SELECT
+  CAST(NULL AS STRING),
+  SAFE_CAST(x AS INT64),
+  CAST(y AS NUMERIC(10, 2)),
+  CAST(z AS ARRAY<STRUCT<a INT64, b STRING>>),
+  CAST(d AS DATE)
+
+---
+
+(source_file
+  (statement
+    (query_expression
+      (select_statement
+        (keyword_select)
+        (alias_expression
+          (expression
+            (cast_expression
+              (keyword_cast)
+              (expression
+                (keyword_null))
+              (keyword_as)
+              (data_type
+                (identifier)))))
+        (alias_expression
+          (expression
+            (cast_expression
+              (keyword_safe_cast)
+              (expression
+                (identifier))
+              (keyword_as)
+              (data_type
+                (identifier)))))
+        (alias_expression
+          (expression
+            (cast_expression
+              (keyword_cast)
+              (expression
+                (identifier))
+              (keyword_as)
+              (data_type
+                (identifier)
+                (number)
+                (number)))))
+        (alias_expression
+          (expression
+            (cast_expression
+              (keyword_cast)
+              (expression
+                (identifier))
+              (keyword_as)
+              (data_type
+                (keyword_array)
+                (data_type
+                  (keyword_struct)
+                  (struct_field_type
+                    (identifier)
+                    (data_type
+                      (identifier)))
+                  (struct_field_type
+                    (identifier)
+                    (data_type
+                      (identifier))))))))
+        (alias_expression
+          (expression
+            (cast_expression
+              (keyword_cast)
+              (expression
+                (identifier))
+              (keyword_as)
+              (data_type
+                (identifier)))))))))
+
+==================
+Typed literals, INTERVAL and EXTRACT
+==================
+SELECT
+  DATE '2024-01-01',
+  TIMESTAMP "2024-01-01 00:00:00",
+  DATE(Timestamp) AS Date,
+  DATE_SUB(d, INTERVAL 1 DAY),
+  EXTRACT(DAYOFWEEK FROM d),
+  EXTRACT(WEEK(MONDAY) FROM d)
+
+---
+
+(source_file
+  (statement
+    (query_expression
+      (select_statement
+        (keyword_select)
+        (alias_expression
+          (expression
+            (typed_literal
+              (keyword_date)
+              (string))))
+        (alias_expression
+          (expression
+            (typed_literal
+              (keyword_timestamp)
+              (string))))
+        (alias_expression
+          (expression
+            (function_call
+              (function_name
+                (identifier))
+              (expression
+                (identifier))))
+          (keyword_as)
+          (identifier))
+        (alias_expression
+          (expression
+            (function_call
+              (function_name
+                (identifier))
+              (expression
+                (identifier))
+              (expression
+                (interval_expression
+                  (keyword_interval)
+                  (expression
+                    (number))
+                  (identifier))))))
+        (alias_expression
+          (expression
+            (extract_expression
+              (keyword_extract)
+              (identifier)
+              (keyword_from)
+              (expression
+                (identifier)))))
+        (alias_expression
+          (expression
+            (extract_expression
+              (keyword_extract)
+              (function_call
+                (function_name
+                  (identifier))
+                (expression
+                  (identifier)))
+              (keyword_from)
+              (expression
+                (identifier)))))))))
+
+==================
+Array and struct constructors
+==================
+SELECT
+  [1, 2, 3],
+  ARRAY<INT64>[],
+  ARRAY(SELECT x FROM t),
+  STRUCT(1 AS a, 'x' AS b),
+  STRUCT<a INT64>(1),
+  (a, b) IN ((1, 2)),
+  EXISTS(SELECT 1)
+
+---
+
+(source_file
+  (statement
+    (query_expression
+      (select_statement
+        (keyword_select)
+        (alias_expression
+          (expression
+            (array_expression
+              (expression
+                (number))
+              (expression
+                (number))
+              (expression
+                (number)))))
+        (alias_expression
+          (expression
+            (array_expression
+              (keyword_array)
+              (data_type
+                (identifier)))))
+        (alias_expression
+          (expression
+            (array_expression
+              (keyword_array)
+              (subquery
+                (query_expression
+                  (select_statement
+                    (keyword_select)
+                    (alias_expression
+                      (expression
+                        (identifier)))
+                    (from_clause
+                      (keyword_from)
+                      (table_expression
+                        (identifier)))))))))
+        (alias_expression
+          (expression
+            (struct_expression
+              (keyword_struct)
+              (alias_expression
+                (expression
+                  (number))
+                (keyword_as)
+                (identifier))
+              (alias_expression
+                (expression
+                  (string))
+                (keyword_as)
+                (identifier)))))
+        (alias_expression
+          (expression
+            (struct_expression
+              (keyword_struct)
+              (struct_field_type
+                (identifier)
+                (data_type
+                  (identifier)))
+              (alias_expression
+                (expression
+                  (number))))))
+        (alias_expression
+          (expression
+            (in_expression
+              (expression
+                (tuple_expression
+                  (expression
+                    (identifier))
+                  (expression
+                    (identifier))))
+              (keyword_in)
+              (expression
+                (tuple_expression
+                  (expression
+                    (number))
+                  (expression
+                    (number)))))))
+        (alias_expression
+          (expression
+            (exists_expression
+              (keyword_exists)
+              (subquery
+                (query_expression
+                  (select_statement
+                    (keyword_select)
+                    (alias_expression
+                      (expression
+                        (number)))))))))))))
+
+==================
+Window functions and aggregate modifiers
+==================
+SELECT
+  ARRAY_AGG(DISTINCT x IGNORE NULLS),
+  STRING_AGG(name, ',' ORDER BY name),
+  LAG(x) OVER (PARTITION BY a ORDER BY b),
+  SUM(x) OVER (PARTITION BY a ORDER BY b ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW),
+  AVG(x) OVER (ORDER BY b ROWS BETWEEN 6 PRECEDING AND CURRENT ROW),
+  COUNT(*) OVER w,
+  FORMAT_DATE(format => '%Y', date_expr => d)
+
+---
+
+(source_file
+  (statement
+    (query_expression
+      (select_statement
+        (keyword_select)
+        (alias_expression
+          (expression
+            (function_call
+              (function_name
+                (identifier))
+              (keyword_distinct)
+              (expression
+                (identifier))
+              (null_handling
+                (keyword_ignore)
+                (keyword_nulls)))))
+        (alias_expression
+          (expression
+            (function_call
+              (function_name
+                (identifier))
+              (expression
+                (identifier))
+              (expression
+                (string))
+              (order_by_clause
+                (keyword_order)
+                (keyword_by)
+                (order_expression
+                  (expression
+                    (identifier)))))))
+        (alias_expression
+          (expression
+            (function_call
+              (function_name
+                (identifier))
+              (expression
+                (identifier))
+              (over_clause
+                (keyword_over)
+                (partition_by_clause
+                  (keyword_partition)
+                  (keyword_by)
+                  (expression
+                    (identifier)))
+                (order_by_clause
+                  (keyword_order)
+                  (keyword_by)
+                  (order_expression
+                    (expression
+                      (identifier))))))))
+        (alias_expression
+          (expression
+            (function_call
+              (function_name
+                (identifier))
+              (expression
+                (identifier))
+              (over_clause
+                (keyword_over)
+                (partition_by_clause
+                  (keyword_partition)
+                  (keyword_by)
+                  (expression
+                    (identifier)))
+                (order_by_clause
+                  (keyword_order)
+                  (keyword_by)
+                  (order_expression
+                    (expression
+                      (identifier))))
+                (window_frame
+                  (keyword_rows)
+                  (keyword_between)
+                  (frame_bound
+                    (keyword_unbounded)
+                    (keyword_preceding))
+                  (keyword_and)
+                  (frame_bound
+                    (keyword_current)
+                    (keyword_row)))))))
+        (alias_expression
+          (expression
+            (function_call
+              (function_name
+                (identifier))
+              (expression
+                (identifier))
+              (over_clause
+                (keyword_over)
+                (order_by_clause
+                  (keyword_order)
+                  (keyword_by)
+                  (order_expression
+                    (expression
+                      (identifier))))
+                (window_frame
+                  (keyword_rows)
+                  (keyword_between)
+                  (frame_bound
+                    (expression
+                      (number))
+                    (keyword_preceding))
+                  (keyword_and)
+                  (frame_bound
+                    (keyword_current)
+                    (keyword_row)))))))
+        (alias_expression
+          (expression
+            (function_call
+              (function_name
+                (identifier))
+              (star)
+              (over_clause
+                (keyword_over)
+                (identifier)))))
+        (alias_expression
+          (expression
+            (function_call
+              (function_name
+                (identifier))
+              (named_argument
+                (identifier)
+                (expression
+                  (string)))
+              (named_argument
+                (identifier)
+                (expression
+                  (identifier))))))))))

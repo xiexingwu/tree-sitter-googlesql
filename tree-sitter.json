@@ -12,7 +12,7 @@
       "path": ".",
       "injection-regex": "^google_sql$",
       "class-name": "TreeSitterGoogleSql",
-      "highlights": "queries/highlights.scm"
+      "highlights": "queries/googlesql/highlights.scm"
     }
   ],
   "metadata": {
